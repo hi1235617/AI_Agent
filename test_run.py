@@ -193,7 +193,7 @@ if __name__ == "__main__":
 
     async def main():
         bot = Nanobot.from_config("C:\\Users\\lty\\.nanobot\\config.json")
-        result = await bot.run("你好，我是谁？")
+        result = await bot.run("你好，还记得我是谁吗？")
         print(result.content)
 
     asyncio.run(main())
