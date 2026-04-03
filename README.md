@@ -1,1 +1,2 @@
-本项目基于nanobot（https://github.com/HKUDS/nanobot）进行开发
+本项目基于nanobot进行开发
+原项目地址：https://github.com/HKUDS/nanobot
