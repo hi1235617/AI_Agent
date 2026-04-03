@@ -3,18 +3,60 @@ schema: spec-driven
 # Project context (optional)
 # This is shown to AI when creating artifacts.
 # Add your tech stack, conventions, style guides, domain knowledge, etc.
-# Example:
-#   context: |
-#     Tech stack: TypeScript, React, Node.js
-#     We use conventional commits
-#     Domain: e-commerce platform
+context: |
+  # AI_Agent Project - 基于 nanobot 的 AI Agent 开发项目
+
+  ## 项目概述
+  本项目基于 nanobot（https://github.com/HKUDS/nanobot）进行开发，是一个轻量级的个人 AI 助手框架。
+
+  ## 技术栈
+  - **后端**: Python 3.11+
+  - **核心框架**: nanobot
+  - **多 LLM 支持**: LiteLLM
+  - **配置管理**: Pydantic, Pydantic Settings
+  - **桥接服务**: TypeScript, Node.js (用于 WhatsApp 集成)
+  - **测试**: pytest
+  - **代码规范**: ruff
+
+  ## 支持的 LLM 提供商
+  - DashScope (阿里云通义千问/Qwen) - 主要使用
+  - OpenAI, Anthropic, DeepSeek, Zhipu, Moonshot, Gemini 等
+  - 本地部署: vLLM, Ollama
+  - 网关: OpenRouter, SiliconFlow, VolcEngine 等
+
+  ## 项目结构
+  - `nanobot/` - 核心框架代码
+  - `bridge/` - TypeScript/Node.js WhatsApp 桥接服务
+  - `tests/` - 测试代码
+  - `docs/` - 文档
+  - `.nanobot/` - 配置目录
+
+  ## 开发约定
+  - 使用 `pyproject.toml` 管理依赖
+  - 测试文件放在 `tests/` 目录
+  - 配置文件使用 `config.json` 格式，位于其他目录，如需修改，请告知
+  - 遵循现有代码风格和架构模式
+  - 使用.venv 虚拟环境进行开发,相关依赖都已经安装。激活虚拟环境之前，需要先进入到conda环境中。
+
+  ## Python SDK 使用
+  - 可以通过 `nanobot.nanobot.Nanobot` 类进行程序化调用
+  - 支持 Hook 系统进行生命周期扩展
+  - 支持多会话隔离（session_key）
+
+  ## 当前配置
+  - 默认使用 Qwen 模型（qwen-max）
+  - 通过 DashScope 提供商调用
+  - 配置文件位于 `.nanobot/config.json`
 
 # Per-artifact rules (optional)
 # Add custom rules for specific artifacts.
-# Example:
-#   rules:
-#     proposal:
-#       - Keep proposals under 500 words
-#       - Always include a "Non-goals" section
-#     tasks:
-#       - Break tasks into chunks of max 2 hours
+rules:
+  proposal:
+    - 保持提案清晰简洁
+    - 始终包含"目标"和"非目标"部分
+    - 考虑与 nanobot 现有架构的兼容性
+  tasks:
+    - 将任务分解为可管理的小块
+    - 优先考虑与现有代码库的集成
+    - 确保包含测试要求
+
