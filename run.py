@@ -10,7 +10,7 @@ from nanobot.agent.hook import AgentHook
 from nanobot.agent.loop import AgentLoop
 from nanobot.bus.queue import MessageBus
 
-
+# 单次运行结果
 @dataclass(slots=True)
 class RunResult:
     """Result of a single agent run."""
@@ -18,6 +18,9 @@ class RunResult:
     content: str
     tools_used: list[str]
     messages: list[dict[str, Any]]
+
+
+# 主入口，提供从配置文件创建实例和运行的方法
 
 
 class Nanobot:
@@ -84,7 +87,14 @@ class Nanobot:
             timezone=defaults.timezone,
         )
         return cls(loop)
-
+    
+    """
+    消息：要处理的用户消息。
+    session_key：用于会话隔离的会话标识符。
+    不同的密钥拥有独立的历史记录。
+    hooks：此运行的可选生命周期钩子。
+    
+    """
     async def run(
         self,
         message: str,
@@ -175,3 +185,15 @@ def _make_provider(config: Any) -> Any:
         reasoning_effort=defaults.reasoning_effort,
     )
     return provider
+
+
+
+if __name__ == "__main__":
+    import asyncio
+
+    async def main():
+        bot = Nanobot.from_config("C:\\Users\\lty\\.nanobot\\config.json")
+        result = await bot.run("你好，我是谁？")
+        print(result.content)
+
+    asyncio.run(main())
