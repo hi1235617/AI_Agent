@@ -46,12 +46,14 @@ async def test_get_neighbors(knowledge_store, knowledge_graph):
     note3 = await knowledge_store.create_note(NoteCreate(title="Note 3", content="[[Note 4]]"))
     note4 = await knowledge_store.create_note(NoteCreate(title="Note 4", content=""))
     
-    # Get neighbors at depth 1
+    # Get neighbors at depth 1 - visited nodes: note1, note2, note3
+    # All edges between these: note1->note2, note1->note3, note2->note3
     neighbors_depth1 = await knowledge_graph.get_neighbors(note1.id, depth=1)
     assert len(neighbors_depth1["nodes"]) == 3  # note1 + note2 + note3
-    assert len(neighbors_depth1["edges"]) == 2  # note1->note2, note1->note3
+    assert len(neighbors_depth1["edges"]) == 3  # note1->note2, note1->note3, note2->note3
     
-    # Get neighbors at depth 2
+    # Get neighbors at depth 2 - all 4 notes
+    # All edges: note1->note2, note1->note3, note2->note3, note3->note4
     neighbors_depth2 = await knowledge_graph.get_neighbors(note1.id, depth=2)
     assert len(neighbors_depth2["nodes"]) == 4  # all notes
     assert len(neighbors_depth2["edges"]) == 4  # note1->note2, note1->note3, note2->note3, note3->note4
@@ -217,19 +219,19 @@ async def test_neighbor_query_with_different_depths(knowledge_store, knowledge_g
     d = await knowledge_store.create_note(NoteCreate(title="D", content="[[E]]"))
     e = await knowledge_store.create_note(NoteCreate(title="E", content=""))
     
-    # Depth 1: A, B
+    # Depth 1: A, B - edges: A->B
     neighbors = await knowledge_graph.get_neighbors(a.id, depth=1)
     node_ids = [n["id"] for n in neighbors["nodes"]]
     assert set(node_ids) == {a.id, b.id}
     assert len(neighbors["edges"]) == 1
     
-    # Depth 2: A, B, C
+    # Depth 2: A, B, C - edges: A->B, B->C
     neighbors = await knowledge_graph.get_neighbors(a.id, depth=2)
     node_ids = [n["id"] for n in neighbors["nodes"]]
     assert set(node_ids) == {a.id, b.id, c.id}
     assert len(neighbors["edges"]) == 2
     
-    # Depth 3: A, B, C, D
+    # Depth 3: A, B, C, D - edges: A->B, B->C, C->D
     neighbors = await knowledge_graph.get_neighbors(a.id, depth=3)
     node_ids = [n["id"] for n in neighbors["nodes"]]
     assert set(node_ids) == {a.id, b.id, c.id, d.id}

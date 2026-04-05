@@ -1,4 +1,5 @@
 import pytest
+from pathlib import Path
 from nanobot.knowledge.version import VersionManager
 from nanobot.knowledge.models import NoteCreate, NoteUpdate
 
@@ -13,8 +14,10 @@ def temp_versions_dir(tmp_path: Path) -> Path:
 
 @pytest.fixture
 async def version_manager(knowledge_store, temp_versions_dir):
-    """Create a VersionManager instance for testing."""
-    return VersionManager(store=knowledge_store, versions_dir=str(temp_versions_dir))
+    """Create a VersionManager instance for testing and wire it to the store."""
+    vm = VersionManager(store=knowledge_store, versions_dir=str(temp_versions_dir))
+    knowledge_store.version_manager = vm
+    yield vm
 
 
 @pytest.mark.asyncio
@@ -236,7 +239,7 @@ async def test_version_storage_efficiency(knowledge_store, version_manager):
     for i in range(10):
         await knowledge_store.update_note(
             note.id, 
-            NoteUpdate(content=f"{content[:-1]}{i}")  # Only change last character
+            NoteUpdate(content=f"{'X' * 9999}{i}")  # Only change last character
         )
     
     versions = await version_manager.list_versions(note.id)

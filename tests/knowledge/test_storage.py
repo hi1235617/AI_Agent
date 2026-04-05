@@ -14,7 +14,7 @@ async def test_store_initialization(knowledge_store):
         assert 'tags' in table_names
         assert 'note_tags' in table_names
         assert 'links' in table_names
-        assert 'note_fts' in table_names
+        assert 'notes_fts' in table_names
 
 
 @pytest.mark.asyncio

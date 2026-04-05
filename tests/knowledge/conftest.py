@@ -25,3 +25,29 @@ async def knowledge_store(temp_kb_dir, temp_db_path):
     yield store
     # Cleanup
     await store.close()
+
+
+@pytest.fixture
+async def knowledge_graph(knowledge_store):
+    """Create a KnowledgeGraph instance for testing."""
+    from nanobot.knowledge.graph import KnowledgeGraph
+    graph = KnowledgeGraph(store=knowledge_store)
+    await graph.build_graph()
+    yield graph
+
+
+@pytest.fixture
+def temp_versions_dir(tmp_path: Path) -> Path:
+    """Create a temporary directory for version storage."""
+    versions_dir = tmp_path / "versions"
+    versions_dir.mkdir()
+    return versions_dir
+
+
+@pytest.fixture
+async def version_manager(knowledge_store, temp_versions_dir):
+    """Create a VersionManager instance for testing and wire it to the store."""
+    from nanobot.knowledge.version import VersionManager
+    vm = VersionManager(store=knowledge_store, versions_dir=str(temp_versions_dir))
+    knowledge_store.version_manager = vm
+    yield vm
