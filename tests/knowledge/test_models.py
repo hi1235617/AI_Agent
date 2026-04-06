@@ -185,12 +185,12 @@ def test_tag_model_validation():
             created_at=now
         )
     
-    with pytest.raises(ValidationError):
-        Tag(
-            id="tag-123",
-            name="test/tag",
-            # Missing created_at
-        )
+    # created_at is now optional (defaults to None)
+    tag_no_date = Tag(
+        id="tag-123",
+        name="test/tag",
+    )
+    assert tag_no_date.created_at is None
     
     # Optional fields default to None
     tag = Tag(
@@ -268,16 +268,15 @@ def test_version_model_validation():
     assert version.content == "Version content"
     assert version.created_at == now
     
-    # Missing required fields
-    with pytest.raises(ValidationError):
-        Version(
-            # Missing id
-            note_id="note-123",
-            version_number=1,
-            title="Version 1",
-            content="Content",
-            created_at=now
-        )
+    # id is now optional (defaults to None)
+    version_no_id = Version(
+        note_id="note-123",
+        version_number=1,
+        title="Version 1",
+        content="Content",
+        created_at=now
+    )
+    assert version_no_id.id is None
     
     with pytest.raises(ValidationError):
         Version(

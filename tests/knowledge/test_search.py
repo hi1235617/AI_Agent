@@ -1,6 +1,6 @@
 import pytest
 from nanobot.knowledge.search import SearchService
-from nanobot.knowledge.models import NoteCreate
+from nanobot.knowledge.models import NoteCreate, NoteUpdate
 
 
 @pytest.fixture
@@ -301,10 +301,10 @@ async def test_search_updates_after_note_modification(knowledge_store, search_se
     results = await search_service.fulltext_search("Python")
     assert len(results) == 1
     
-    # Update note content
+    # Update note content - remove Python, add JavaScript
     await knowledge_store.update_note(note.id, NoteUpdate(
         title="Updated Title",
-        content="Now about JavaScript instead of Python"
+        content="Now about JavaScript and web development"
     ))
     
     # Search for Python should no longer find it

@@ -43,13 +43,18 @@ class SearchService:
         q = (query or "").lower()
         title = getattr(note, "title", "") or ""
         content = getattr(note, "content", "") or ""
-        if q and q in (title or "").lower():
-            highlights.append(title)
-        if q:
+        
+        # Try individual terms from the query
+        terms = q.split() if q else []
+        
+        for term in terms:
+            if not term:
+                continue
+            if term in title.lower():
+                highlights.append(title)
             c_lower = content.lower()
-            idx = c_lower.find(q)
+            idx = c_lower.find(term)
             if idx != -1:
-                # Simple snippet around the match
                 start = max(0, idx - 60)
                 end = min(len(content), idx + 60)
                 snippet = content[start:end].replace("\n", " ")
@@ -100,7 +105,7 @@ class SearchService:
                 continue
             if tag_filter:
                 note_tag_names = [t.name for t in getattr(note, "tags", [])]  # type: ignore[attr-defined]
-                if not any(t in note_tag_names for t in tag_filter):
+                if not all(t in note_tag_names for t in tag_filter):
                     continue
             highlights = self._build_highlights(query, note)
             results.append(SearchResult(note=note, score=score, match_highlights=highlights, match_type="fulltext"))  # type: ignore[arg-type]

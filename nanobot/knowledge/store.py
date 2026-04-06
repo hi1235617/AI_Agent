@@ -342,6 +342,17 @@ class KnowledgeStore:
             await self._db.execute("DELETE FROM notes WHERE id = ?", (note_id,))
         await self._db.commit()
 
+    async def restore_note(self, note_id: str) -> Note:
+        """Restore a soft-deleted note."""
+        if not self._db:
+            raise RuntimeError("Database not initialized")
+        await self._db.execute("UPDATE notes SET deleted_at = NULL WHERE id = ?", (note_id,))
+        await self._db.commit()
+        note = await self.get_note_by_id(note_id, include_relations=True, include_deleted=False)
+        if note is None:
+            raise NoteNotFoundError(f"Note {note_id} not found for restore")
+        return note
+
     async def list_notes(
         self,
         tag_filter: Optional[List[str]] = None,

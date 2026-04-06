@@ -36,6 +36,7 @@ class VersionManager:
     def __init__(self, store: KnowledgeStore, versions_dir: str):
         self.store = store
         self.versions_dir = versions_dir
+        self.max_versions_per_note: Optional[int] = None
         Path(self.versions_dir).mkdir(parents=True, exist_ok=True)
 
     # -----------------------------
@@ -139,6 +140,10 @@ class VersionManager:
         path = self._version_path(note_id, version_number)
         await asyncio.to_thread(self._write_json, path, data)
 
+        # Prune old versions if max_versions_per_note is set
+        if self.max_versions_per_note is not None:
+            await self._prune_versions(note_id)
+
         # Create Version model instance from data when possible
         if hasattr(Version, "from_dict"):
             return Version.from_dict(data)  # type: ignore[call-arg]
@@ -214,18 +219,49 @@ class VersionManager:
                 author=None,
             )
 
-        # Update current note with target content
-        await self._update_current_note(
-            note_id,
-            title=getattr(target_version, "title", None),
-            content=getattr(target_version, "content", None),
-        )
+        # Temporarily disable version manager to prevent double-save during restore
+        old_vm = getattr(self.store, "_version_manager", None)
+        try:
+            self.store._version_manager = None
+            # Update current note with target content
+            await self._update_current_note(
+                note_id,
+                title=getattr(target_version, "title", None),
+                content=getattr(target_version, "content", None),
+            )
+        finally:
+            self.store._version_manager = old_vm
 
         # Return the updated note
         note = await self.store.get_note_by_id(note_id, include_relations=True, include_deleted=False)
         if note is None:
             raise NoteNotFoundError(f"Note {note_id} not found after restore")
         return note
+
+    async def _prune_versions(self, note_id: str) -> None:
+        """Delete oldest versions to keep only max_versions_per_note."""
+        if self.max_versions_per_note is None:
+            return
+        note_dir = os.path.join(self.versions_dir, str(note_id))
+        if not os.path.exists(note_dir):
+            return
+        version_nums = []
+        for fname in os.listdir(note_dir):
+            if fname.startswith("version_") and fname.endswith(".json"):
+                try:
+                    num = int(fname[len("version_"):-len(".json")])
+                    version_nums.append(num)
+                except ValueError:
+                    continue
+        version_nums.sort()
+        # Delete oldest versions beyond the limit
+        while len(version_nums) > self.max_versions_per_note:
+            oldest = version_nums.pop(0)
+            path = self._version_path(note_id, oldest)
+            try:
+                os.remove(path)
+            except FileNotFoundError:
+                pass
 
     async def delete_version_history(self, note_id: str, keep_latest: Optional[int] = None) -> None:
         """

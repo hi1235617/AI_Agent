@@ -25,10 +25,13 @@ class KnowledgeGraph:
         self._graph_cache: Optional[nx.DiGraph] = None
         self._cache_updated_at: Optional[str] = None
 
+    _counter = 0
+    
     @staticmethod
     def _now() -> str:
-        from datetime import datetime
-        return datetime.utcnow().isoformat(timespec="microseconds")
+        import time
+        KnowledgeGraph._counter += 1
+        return f"{time.time_ns()}_{KnowledgeGraph._counter}"
 
     async def build_graph(self, force_rebuild: bool = False) -> nx.DiGraph:
         """Build or return a cached directed graph of notes and links.
@@ -219,12 +222,20 @@ class KnowledgeGraph:
         if format == "json":
             data = nx.node_link_data(G)
             # Convert source/target to from/to for test compatibility
-            if "links" in data:
-                for link in data["links"]:
+            edge_key = "edges" if "edges" in data else "links"
+            if edge_key in data:
+                for link in data[edge_key]:
                     if "source" in link:
                         link["from"] = link.pop("source")
                     if "target" in link:
                         link["to"] = link.pop("target")
+            # Add label and tags fields to nodes
+            for node in data.get("nodes", []):
+                if "title" in node:
+                    node["label"] = node["title"]
+                # Ensure tags field exists
+                if "tags" not in node:
+                    node["tags"] = []
             return data
         if format == "gexf":
             # generate_gexf yields lines; join into a single string

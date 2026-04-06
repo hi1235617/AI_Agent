@@ -83,7 +83,7 @@ class KnowledgeSearchTool(Tool):
             "type": "object",
             "properties": {
                 "query": {"type": "string", "description": "要搜索的查询文本"},
-                "limit": {"type": "integer", "default": 10, "description": "返回结果数量上限"},
+                "limit": {"type": "integer", "default": 10, "minimum": 1, "maximum": 50, "description": "返回结果数量上限"},
                 "search_type": {"type": "string", "enum": ["fulltext", "title"], "default": "fulltext", "description": "搜索类型"}
             },
             "required": ["query"]
@@ -108,10 +108,13 @@ class KnowledgeSearchTool(Tool):
 
         try:
             results = None
-            if hasattr(kb, "search") and hasattr(kb.search, "fulltext_search"):
-                results = await kb.search.fulltext_search(query=query, limit=limit, min_score=min_score)
-            elif hasattr(kb, "search") and hasattr(kb.search, "tag_search"):
+            if search_type == "tag" and hasattr(kb, "search") and hasattr(kb.search, "tag_search"):
                 results = await kb.search.tag_search(tags=[query], limit=limit)
+            elif search_type == "semantic" and hasattr(kb, "search") and hasattr(kb.search, "semantic_search"):
+                min_similarity = float(kwargs.get("min_similarity", 0.7))
+                results = await kb.search.semantic_search(query=query, limit=limit, min_similarity=min_similarity)
+            elif hasattr(kb, "search") and hasattr(kb.search, "fulltext_search"):
+                results = await kb.search.fulltext_search(query=query, limit=limit, min_score=min_score)
             elif hasattr(kb, "search") and hasattr(kb.search, "semantic_search"):
                 results = await kb.search.semantic_search(query, limit=limit)
             elif hasattr(kb, "search") and hasattr(kb.search, "search"):
@@ -305,6 +308,8 @@ class KnowledgeGetTool(Tool):
 
         try:
             note = await kb.get_note_by_id(note_id, include_relations=True)
+            if note is None:
+                return {"status": "error", "message": f"Note {note_id} not found"}
             return {
                 "status": "success",
                 "note": {
