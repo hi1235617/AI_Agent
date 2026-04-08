@@ -63,9 +63,24 @@ async def _init_knowledge_base(config_path: str | None, workspace_path: str | No
 
 
 # Placeholder for test mocking. Actual implementation is delegated to _init_knowledge_base.
+_mocked_store = None
 def get_knowledge_store(config_path: str | None = None, workspace_path: str | None = None):
     """Get a knowledge store instance. Used by CLI commands and test mocking."""
+    global _mocked_store
+    if _mocked_store is not None:
+        # Return a wrapper object that has both store attributes and a .store attribute pointing to itself
+        class MockKB:
+            def __init__(self, store):
+                self.store = store
+            def __getattr__(self, name):
+                return getattr(self.store, name)
+        return MockKB(_mocked_store)
     return None
+
+def set_mocked_store(store):
+    """Set the mocked knowledge store for testing."""
+    global _mocked_store
+    _mocked_store = store
 
 @kb_app.command("status")
 async def kb_status(

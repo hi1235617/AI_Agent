@@ -22,6 +22,9 @@ from .store import KnowledgeStore
 from .graph import KnowledgeGraph
 from .search import SearchService
 from .version import VersionManager
+from . import importers
+from . import exporters
+from . import migrations
 from .exceptions import (
     KnowledgeBaseError,
     NoteNotFoundError,
@@ -31,6 +34,9 @@ from .exceptions import (
     StorageError,
     SearchError,
     GraphError,
+    ImportError,
+    ExportError,
+    MigrationError,
 )
 
 __version__ = "1.0.0"
@@ -42,6 +48,11 @@ __all__ = [
     "KnowledgeGraph", 
     "SearchService",
     "VersionManager",
+    "get_knowledge_base",
+    "is_enabled",
+    "importers",
+    "exporters",
+    "migrations",
     "KnowledgeBaseError",
     "NoteNotFoundError",
     "TagNotFoundError",
@@ -50,6 +61,9 @@ __all__ = [
     "StorageError",
     "SearchError",
     "GraphError",
+    "ImportError",
+    "ExportError",
+    "MigrationError",
 ]
 
 
@@ -97,8 +111,41 @@ class KnowledgeBase:
         await self.store.close()
 
 
+_KB_INSTANCE: Optional["KnowledgeBase"] = None
+
+
 def is_enabled() -> bool:
     """Check if knowledge base feature is enabled in configuration."""
     from nanobot.config import load_config
     config = load_config()
-    return getattr(config, "knowledge_base", {}).get("enabled", False)
+    kb_config = getattr(config, "knowledge_base", None)
+    if kb_config is None:
+        return False
+    # Support both dict and object config
+    if hasattr(kb_config, "enabled"):
+        return bool(kb_config.enabled)
+    elif isinstance(kb_config, dict):
+        return bool(kb_config.get("enabled", False))
+    return False
+
+
+def get_knowledge_base() -> Optional["KnowledgeBase"]:
+    """Get the global knowledge base instance.
+    
+    Returns:
+        KnowledgeBase instance if enabled and initialized, None otherwise
+    """
+    global _KB_INSTANCE
+    if _KB_INSTANCE is not None:
+        return _KB_INSTANCE
+        
+    if not is_enabled():
+        return None
+        
+    try:
+        from nanobot.config import load_config
+        config = load_config()
+        _KB_INSTANCE = KnowledgeBase(config)
+        return _KB_INSTANCE
+    except Exception:
+        return None

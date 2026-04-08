@@ -91,6 +91,11 @@ class KnowledgeStore:
         if self._db:
             await self._db.close()
             self._db = None
+    
+    async def migrate(self, target_version: Optional[str] = None) -> None:
+        """Run database migrations."""
+        from .migrations import migrate as migrate_func
+        await migrate_func(self, target_version=target_version)
 
     @asynccontextmanager
     async def _get_connection(self):
@@ -356,13 +361,16 @@ class KnowledgeStore:
     async def list_notes(
         self,
         tag_filter: Optional[List[str]] = None,
+        limit: int = 50,
+        offset: int = 0,
+        order_by: str = "created_at",
+        order_direction: str = "desc",
+        include_relations: bool = False,
+        include_deleted: bool = False,
         date_from: Optional[datetime] = None,
         date_to: Optional[datetime] = None,
-        limit: int = 100,
-        offset: int = 0,
-        order_by: str = "updated_at",
-        order_direction: str = "desc",
-    ) -> List[Note]:
+        count_only: bool = False,
+    ) -> List[Note] | int:
         if not self._db:
             raise RuntimeError("Database not initialized")
         base = "SELECT n.* FROM notes n"
@@ -381,6 +389,14 @@ class KnowledgeStore:
             where.append("n.updated_at <= ?")
             params.append(date_to.isoformat(timespec='seconds'))
         where_clause = "WHERE " + " AND ".join(where) if where else ""
+        
+        if count_only:
+            # Return only the count of matching notes
+            sql = f"SELECT COUNT(DISTINCT n.id) as cnt FROM notes n {joins} {where_clause}"
+            cursor = await self._db.execute(sql, tuple(params))
+            row = await cursor.fetchone()
+            return int(row["cnt"]) if row else 0
+        
         sql = f"{base} {joins} {where_clause} GROUP BY n.id ORDER BY n.{order_by} {order_direction.upper()} LIMIT ? OFFSET ?"
         params.extend([limit, offset])
         cursor = await self._db.execute(sql, tuple(params))
@@ -499,3 +515,27 @@ class KnowledgeStore:
 
     def _parse_links_from_content(self, content: str) -> List[str]:
         return [m for m in re.findall(r"\[\[(.*?)\]\]", content) if m]
+    
+    async def import_notes(self, path: str, format: Optional[str] = None, **kwargs) -> List[Any]:
+        """Import notes from file using the importers module."""
+        from .importers import import_notes as import_func
+        notes_data = await import_func(path, format=format, **kwargs)
+        imported_notes = []
+        for note_create in notes_data:
+            note = await self.create_note(note_create)
+            imported_notes.append(note)
+        return imported_notes
+    
+    async def export_notes(self, path: str, format: Optional[str] = None, note_ids: Optional[List[str]] = None, **kwargs) -> None:
+        """Export notes to file using the exporters module."""
+        from .exporters import export_notes as export_func
+        if note_ids:
+            notes = []
+            for note_id in note_ids:
+                note = await self.get_note_by_id(note_id)
+                if note:
+                    notes.append(note)
+        else:
+            notes = await self.list_notes(limit=10000)
+        
+        await export_func(notes, path, format=format, **kwargs)

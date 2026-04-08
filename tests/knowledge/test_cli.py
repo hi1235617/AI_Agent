@@ -1,6 +1,6 @@
 import pytest
 from typer.testing import CliRunner
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch, MagicMock, AsyncMock
 from nanobot.cli.commands import app
 
 
@@ -10,10 +10,11 @@ runner = CliRunner()
 @pytest.fixture
 def mock_knowledge_store():
     """Mock knowledge store for CLI tests."""
-    with patch('nanobot.cli.commands.get_knowledge_store') as mock:
-        store = MagicMock()
-        mock.return_value = store
-        yield store
+    from nanobot.cli.commands import set_mocked_store
+    store = AsyncMock()
+    set_mocked_store(store)
+    yield store
+    set_mocked_store(None)
 
 
 @pytest.fixture

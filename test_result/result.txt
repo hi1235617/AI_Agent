@@ -1,0 +1,445 @@
+____________________________________ test_kb_create_command ____________________________________ 
+
+mock_knowledge_store = <MagicMock name='get_knowledge_store()' id='2782507814256'>
+mock_note = <MagicMock name='get_knowledge_store().create_note()' id='2782507728768'>
+
+    def test_kb_create_command(mock_knowledge_store, mock_note):
+        """Test kb create command."""
+        mock_knowledge_store.create_note.return_value = mock_note
+
+        result = runner.invoke(
+            app,
+            ["kb", "create", "Test Note", "--content", "Test content", "--tags", "tag1", "--tags", "tag2"]
+        )
+
+>       assert result.exit_code == 0
+E       assert 1 == 0
+E        +  where 1 = <Result UnboundLocalError("cannot access local variable 'title' where it is not associated with a value")>.exit_code
+
+tests\knowledge\test_cli.py:41: AssertionError
+_____________________________ test_kb_create_command_opens_editor ______________________________ 
+
+mock_knowledge_store = <MagicMock name='get_knowledge_store()' id='2782507947824'>
+mock_note = <MagicMock name='get_knowledge_store().create_note()' id='2782507952144'>
+
+    def test_kb_create_command_opens_editor(mock_knowledge_store, mock_note):
+        """Test kb create command opens editor when no content is provided."""
+        mock_knowledge_store.create_note.return_value = mock_note
+
+        with patch('nanobot.cli.commands.open_editor') as mock_editor:
+            mock_editor.return_value = "Editor content"
+
+            result = runner.invoke(
+                app,
+                ["kb", "create", "Test Note"],
+                input="\n"  # Simulate user pressing enter to open editor
+            )
+
+>           assert result.exit_code == 0
+E           assert 1 == 0
+E            +  where 1 = <Result UnboundLocalError("cannot access local variable 'title' where it is not associated with a value")>.exit_code
+
+tests\knowledge\test_cli.py:67: AssertionError
+_____________________________________ test_kb_list_command _____________________________________ 
+
+mock_knowledge_store = <MagicMock name='get_knowledge_store()' id='2782508568544'>
+mock_note = <MagicMock id='2782508572384'>
+
+    def test_kb_list_command(mock_knowledge_store, mock_note):
+        """Test kb list command."""
+        mock_knowledge_store.list_notes.return_value = [mock_note]
+
+        result = runner.invoke(app, ["kb", "list"])
+
+        assert result.exit_code == 0
+>       assert "Test Note" in result.stdout
+E       assert 'Test Note' in "Failed to list notes: object list can't be used in 'await' expression\n             Notes             \n┌────┬───────┬──────┬─────────┐\n│ ID │ Title │ Tags │ Created │\n├────┼───────┼──────┼─────────┤\n└────┴───────┴──────┴─────────┘\n"
+E        +  where "Failed to list notes: object list can't be used in 'await' expression\n             Notes             \n┌────┬───────┬──────┬─────────┐\n│ ID │ Title │ Tags │ Created │\n├────┼───────┼──────┼─────────┤\n└────┴───────┴──────┴─────────┘\n" = <Result okay>.stdout
+
+tests\knowledge\test_cli.py:79: AssertionError
+_____________________________________ test_kb_show_command _____________________________________ 
+
+mock_knowledge_store = <MagicMock name='get_knowledge_store()' id='2782508479936'>
+mock_note = <MagicMock name='get_knowledge_store().get_note_by_id()' id='2782508888672'>
+
+    def test_kb_show_command(mock_knowledge_store, mock_note):
+        """Test kb show command."""
+        mock_knowledge_store.get_note_by_id.return_value = mock_note
+        mock_knowledge_store.get_note_by_title.return_value = mock_note
+
+        # By ID
+        result = runner.invoke(app, ["kb", "show", "test-note-id"])
+>       assert result.exit_code == 0
+E       assert 1 == 0
+E        +  where 1 = <Result UnboundLocalError("cannot access local variable 'note_id' where it is not associated with a value")>.exit_code
+
+tests\knowledge\test_cli.py:105: AssertionError
+_________________________________ test_kb_show_note_not_found __________________________________ 
+
+mock_knowledge_store = <MagicMock name='get_knowledge_store()' id='2782508579920'>
+
+    def test_kb_show_note_not_found(mock_knowledge_store):
+        """Test kb show command with non-existent note."""
+        mock_knowledge_store.get_note_by_id.return_value = None
+        mock_knowledge_store.get_note_by_title.return_value = None
+
+        result = runner.invoke(app, ["kb", "show", "non-existent-id"])
+        assert result.exit_code != 0
+>       assert "Note not found" in result.stdout
+E       assert 'Note not found' in ''
+E        +  where '' = <Result UnboundLocalError("cannot access local variable 'note_id' where it is not associated with a value")>.stdout
+
+tests\knowledge\test_cli.py:133: AssertionError
+_____________________________________ test_kb_edit_command _____________________________________ 
+
+mock_knowledge_store = <MagicMock name='get_knowledge_store()' id='2782508638400'>
+mock_note = <MagicMock name='get_knowledge_store().get_note_by_id()' id='2782508445632'>
+
+    def test_kb_edit_command(mock_knowledge_store, mock_note):
+        """Test kb edit command."""
+        mock_knowledge_store.get_note_by_id.return_value = mock_note
+        mock_knowledge_store.update_note.return_value = mock_note
+
+        # Update content directly
+        result = runner.invoke(
+            app,
+            ["kb", "edit", "test-note-id", "--content", "New content", "--add-tags", "new-tag", "--message", "Updated content"]
+        )
+
+>       assert result.exit_code == 0
+E       assert 1 == 0
+E        +  where 1 = <Result SystemExit(1)>.exit_code
+
+tests\knowledge\test_cli.py:147: AssertionError
+____________________________________ test_kb_delete_command ____________________________________ 
+
+mock_knowledge_store = <MagicMock name='get_knowledge_store()' id='2782507949696'>
+mock_note = <MagicMock name='get_knowledge_store().get_note_by_id()' id='2782507955168'>
+
+    def test_kb_delete_command(mock_knowledge_store, mock_note):
+        """Test kb delete command."""
+        mock_knowledge_store.get_note_by_id.return_value = mock_note
+
+        # Soft delete with confirmation
+        result = runner.invoke(app, ["kb", "delete", "test-note-id"], input="y\n")
+>       assert result.exit_code == 0
+E       assert 1 == 0
+E        +  where 1 = <Result SystemExit(1)>.exit_code
+
+tests\knowledge\test_cli.py:172: AssertionError
+____________________________________ test_kb_search_command ____________________________________ 
+
+mock_knowledge_store = <MagicMock name='get_knowledge_store()' id='2782509034016'>
+mock_note = <MagicMock id='2782509038336'>
+
+    def test_kb_search_command(mock_knowledge_store, mock_note):
+        """Test kb search command."""
+        from nanobot.knowledge.models import SearchResult
+>       mock_result = SearchResult(
+            note=mock_note,
+            score=0.95,
+            match_highlights=["Test content matches query"],
+            match_type="fulltext"
+        )
+E       pydantic_core._pydantic_core.ValidationError: 11 validation errors for SearchResult      
+E       note.author
+E         Input should be a valid string [type=string_type, input_value=<MagicMock name='mock.author' id='2782509006288'>, input_type=MagicMock]
+E           For further information visit https://errors.pydantic.dev/2.12/v/string_type
+E       note.change_message
+E         Input should be a valid string [type=string_type, input_value=<MagicMock name='mock.cha...age' id='2782509352768'>, input_type=MagicMock]
+E           For further information visit https://errors.pydantic.dev/2.12/v/string_type
+E       note.metadata
+E         Input should be a valid dictionary [type=dict_type, input_value=<MagicMock name='mock.met...ata' id='2782509357760'>, input_type=MagicMock]
+E           For further information visit https://errors.pydantic.dev/2.12/v/dict_type
+E       note.tags.0.id
+E         Input should be a valid string [type=string_type, input_value=<MagicMock name='tag1.id' id='2782505696768'>, input_type=MagicMock]
+E           For further information visit https://errors.pydantic.dev/2.12/v/string_type
+E       note.tags.0.name
+E         Input should be a valid string [type=string_type, input_value=<MagicMock name='tag1.name' id='2782509024704'>, input_type=MagicMock]
+E           For further information visit https://errors.pydantic.dev/2.12/v/string_type
+E       note.tags.0.description
+E         Input should be a valid string [type=string_type, input_value=<MagicMock name='tag1.des...ion' id='2782508940608'>, input_type=MagicMock]
+E           For further information visit https://errors.pydantic.dev/2.12/v/string_type
+E       note.tags.0.color
+E         Input should be a valid string [type=string_type, input_value=<MagicMock name='tag1.color' id='2782508935136'>, input_type=MagicMock]
+E           For further information visit https://errors.pydantic.dev/2.12/v/string_type
+E       note.tags.1.id
+E         Input should be a valid string [type=string_type, input_value=<MagicMock name='tag2.id' id='2782508941184'>, input_type=MagicMock]
+E           For further information visit https://errors.pydantic.dev/2.12/v/string_type
+E       note.tags.1.name
+E         Input should be a valid string [type=string_type, input_value=<MagicMock name='tag2.name' id='2782499932544'>, input_type=MagicMock]
+E           For further information visit https://errors.pydantic.dev/2.12/v/string_type
+E       note.tags.1.description
+E         Input should be a valid string [type=string_type, input_value=<MagicMock name='tag2.des...ion' id='2782508442464'>, input_type=MagicMock]
+E           For further information visit https://errors.pydantic.dev/2.12/v/string_type
+E       note.tags.1.color
+E         Input should be a valid string [type=string_type, input_value=<MagicMock name='tag2.color' id='2782508439248'>, input_type=MagicMock]
+E           For further information visit https://errors.pydantic.dev/2.12/v/string_type
+
+tests\knowledge\test_cli.py:190: ValidationError
+_____________________________________ test_kb_tags_command _____________________________________ 
+
+mock_knowledge_store = <MagicMock name='get_knowledge_store()' id='2782508644304'>
+
+    def test_kb_tags_command(mock_knowledge_store):
+        """Test kb tags command."""
+        mock_tag1 = MagicMock(name="tag1", note_count=5, color="#ff0000")
+        mock_tag2 = MagicMock(name="tag2", note_count=3, color="#00ff00")
+        mock_knowledge_store.list_tags.return_value = [mock_tag1, mock_tag2]
+
+        result = runner.invoke(app, ["kb", "tags", "--sort", "count", "--reverse"])
+
+>       assert result.exit_code == 0
+E       assert 1 == 0
+E        +  where 1 = <Result SystemExit(1)>.exit_code
+
+tests\knowledge\test_cli.py:221: AssertionError
+__________________________________ test_kb_tag_rename_command __________________________________ 
+
+mock_knowledge_store = <MagicMock name='get_knowledge_store()' id='2782508471824'>
+
+    def test_kb_tag_rename_command(mock_knowledge_store):
+        """Test kb tag-rename command."""
+        mock_tag = MagicMock(name="old-tag")
+        mock_knowledge_store.get_tag_by_name.return_value = mock_tag
+
+        result = runner.invoke(app, ["kb", "tag-rename", "old-tag", "new-tag"], input="y\n")     
+
+>       assert result.exit_code == 0
+E       assert 1 == 0
+E        +  where 1 = <Result SystemExit(1)>.exit_code
+
+tests\knowledge\test_cli.py:242: AssertionError
+__________________________________ test_kb_tag_delete_command __________________________________ 
+
+mock_knowledge_store = <MagicMock name='get_knowledge_store()' id='2782508919616'>
+
+    def test_kb_tag_delete_command(mock_knowledge_store):
+        """Test kb tag-delete command."""
+        mock_tag = MagicMock(name="tag-to-delete", note_count=5)
+        mock_knowledge_store.get_tag_by_name.return_value = mock_tag
+
+        result = runner.invoke(app, ["kb", "tag-delete", "tag-to-delete"], input="y\n")
+
+>       assert result.exit_code == 0
+E       assert 1 == 0
+E        +  where 1 = <Result SystemExit(1)>.exit_code
+
+tests\knowledge\test_cli.py:254: AssertionError
+___________________________________ test_kb_versions_command ___________________________________ 
+
+mock_knowledge_store = <MagicMock name='get_knowledge_store()' id='2782508919232'>
+
+    def test_kb_versions_command(mock_knowledge_store):
+        """Test kb versions command."""
+        mock_version1 = MagicMock(
+            version_number=2,
+            created_at="2026-04-04T13:00:00",
+            change_description="Second update",
+            author="test-user"
+        )
+        mock_version2 = MagicMock(
+            version_number=1,
+            created_at="2026-04-04T12:00:00",
+            change_description="First version",
+            author="test-user"
+        )
+        with patch('nanobot.knowledge.version.VersionManager') as mock_vm:
+            mock_vm.return_value.list_versions.return_value = [mock_version1, mock_version2]     
+
+            result = runner.invoke(app, ["kb", "versions", "test-note-id", "--limit", "10"])     
+
+>           assert result.exit_code == 0
+E           assert 1 == 0
+E            +  where 1 = <Result SystemExit(1)>.exit_code
+
+tests\knowledge\test_cli.py:278: AssertionError
+___________________________________ test_kb_restore_command ____________________________________ 
+
+mock_knowledge_store = <MagicMock name='get_knowledge_store()' id='2782508646176'>
+mock_note = <MagicMock name='get_knowledge_store().get_note_by_id()' id='2782508635040'>
+
+    def test_kb_restore_command(mock_knowledge_store, mock_note):
+        """Test kb restore command."""
+        mock_knowledge_store.get_note_by_id.return_value = mock_note
+
+        with patch('nanobot.knowledge.version.VersionManager') as mock_vm:
+            mock_restored_note = MagicMock()
+            mock_restored_note.id = "test-note-id"
+            mock_restored_note.title = "Restored Note"
+            mock_vm.return_value.restore_version.return_value = mock_restored_note
+
+            result = runner.invoke(app, ["kb", "restore", "test-note-id", "--version", "1"], input="y\n")
+
+>           assert result.exit_code == 0
+E           assert 2 == 0
+E            +  where 2 = <Result SystemExit(2)>.exit_code
+
+tests\knowledge\test_cli.py:297: AssertionError
+____________________________________ test_kb_links_command _____________________________________ 
+
+mock_knowledge_store = <MagicMock name='get_knowledge_store()' id='2782509014128'>
+
+    def test_kb_links_command(mock_knowledge_store):
+        """Test kb links command."""
+        mock_link1 = MagicMock(
+            target_note_id="note-2-id",
+            target_note_title="Note 2",
+            link_text="[[Note 2]]",
+            created_at="2026-04-04T12:00:00"
+        )
+        mock_link2 = MagicMock(
+            source_note_id="note-3-id",
+            source_note_title="Note 3",
+            link_text="[[Test Note]]",
+            created_at="2026-04-04T13:00:00"
+        )
+        mock_knowledge_store.get_links_for_note.return_value = (
+            [mock_link1],  # Outgoing
+            [mock_link2]   # Incoming
+        )
+
+        result = runner.invoke(app, ["kb", "links", "test-note-id", "--list"])
+
+>       assert result.exit_code == 0
+E       assert 1 == 0
+E        +  where 1 = <Result SystemExit(1)>.exit_code
+
+tests\knowledge\test_cli.py:327: AssertionError
+____________________________________ test_kb_graph_command _____________________________________ 
+
+mock_knowledge_store = <MagicMock name='get_knowledge_store()' id='2782509445872'>
+
+    def test_kb_graph_command(mock_knowledge_store):
+        """Test kb graph command."""
+        with patch('nanobot.knowledge.graph.KnowledgeGraph') as mock_graph:
+            mock_export = {
+                "nodes": [{"id": "note1", "label": "Note 1"}, {"id": "note2", "label": "Note 2"}],
+                "edges": [{"from": "note1", "to": "note2"}]
+            }
+            mock_graph.return_value.export_graph.return_value = mock_export
+
+            # Text format
+            result = runner.invoke(app, ["kb", "graph", "test-note-id", "--depth", "2"])
+>           assert result.exit_code == 0
+E           assert 1 == 0
+E            +  where 1 = <Result UnboundLocalError("cannot access local variable 'note_id' where it is not associated with a value")>.exit_code
+
+tests\knowledge\test_cli.py:355: AssertionError
+____________________________________ test_kb_import_command ____________________________________ 
+
+mock_knowledge_store = <MagicMock name='get_knowledge_store()' id='2782509433872'>
+
+    def test_kb_import_command(mock_knowledge_store):
+        """Test kb import command."""
+        with patch('nanobot.knowledge.importers.MarkdownImporter') as mock_importer:
+            mock_importer.return_value.import_notes.return_value = 5  # 5 notes imported
+
+            with runner.isolated_filesystem():
+                # Create test markdown file
+                with open("test.md", "w") as f:
+                    f.write("# Test Note\n\nContent")
+
+                result = runner.invoke(
+                    app,
+                    ["kb", "import", "test.md", "--format", "markdown", "--tags", "imported"]    
+                )
+
+>               assert result.exit_code == 0
+E               assert 2 == 0
+E                +  where 2 = <Result SystemExit(2)>.exit_code
+
+tests\knowledge\test_cli.py:387: AssertionError
+____________________________________ test_kb_export_command ____________________________________ 
+
+mock_knowledge_store = <MagicMock name='get_knowledge_store()' id='2782509699904'>
+
+    def test_kb_export_command(mock_knowledge_store):
+        """Test kb export command."""
+        with patch('nanobot.knowledge.exporters.JsonExporter') as mock_exporter:
+            mock_exporter.return_value.export.return_value = 10  # 10 notes exported
+
+            with runner.isolated_filesystem():
+                result = runner.invoke(
+                    app,
+                    ["kb", "export", "export.json", "--format", "json", "--tags", "tag1", "--include-versions"]
+                )
+
+>               assert result.exit_code == 0
+E               assert 2 == 0
+E                +  where 2 = <Result SystemExit(2)>.exit_code
+
+tests\knowledge\test_cli.py:403: AssertionError
+____________________________________ test_kb_status_command ____________________________________ 
+
+mock_knowledge_store = <MagicMock name='get_knowledge_store()' id='2782509405136'>
+
+    def test_kb_status_command(mock_knowledge_store):
+        """Test kb status command."""
+        mock_knowledge_store.get_stats.return_value = {
+            "notes_count": 42,
+            "tags_count": 15,
+            "links_count": 78,
+            "files_size": "1.2 MB",
+            "db_size": "500 KB"
+        }
+
+        result = runner.invoke(app, ["kb", "status"])
+
+        assert result.exit_code == 0
+>       assert "Knowledge Base Status" in result.stdout
+E       AssertionError: assert 'Knowledge Base Status' in ''
+E        +  where '' = <Result okay>.stdout
+
+tests\knowledge\test_cli.py:427: AssertionError
+___________________________________ test_kb_migrate_command ____________________________________ 
+
+mock_knowledge_store = <MagicMock name='get_knowledge_store()' id='2782508575168'>
+
+    def test_kb_migrate_command(mock_knowledge_store):
+        """Test kb migrate command."""
+        with patch('nanobot.knowledge.migrations.MigrationManager') as mock_mm:
+            mock_mm.return_value.run_migrations.return_value = 3  # 3 migrations applied
+
+            result = runner.invoke(app, ["kb", "migrate"])
+>           assert result.exit_code == 0
+E           assert 2 == 0
+E            +  where 2 = <Result SystemExit(2)>.exit_code
+
+tests\knowledge\test_cli.py:440: AssertionError
+_________________________________ test_node_metadata_in_graph __________________________________ 
+
+knowledge_store = <nanobot.knowledge.store.KnowledgeStore object at 0x00000287DA80B020>
+knowledge_graph = <nanobot.knowledge.graph.KnowledgeGraph object at 0x00000287DA808FE0>
+
+    @pytest.mark.asyncio
+    async def test_node_metadata_in_graph(knowledge_store, knowledge_graph):
+        """Test that node metadata is included in graph exports."""
+        note = await knowledge_store.create_note(NoteCreate(
+            title="Test Note",
+            content="Content",
+            tags=["tag1", "tag2"]
+        ))
+
+        export = await knowledge_graph.export_graph(format="json")
+
+        # Node should include title and tags
+        node = next(n for n in export["nodes"] if n["id"] == note.id)
+        assert node["label"] == "Test Note"
+>       assert "tag1" in node["tags"]
+E       AssertionError: assert 'tag1' in []
+
+tests\knowledge\test_graph.py:282: AssertionError
+======================================= warnings summary ======================================= 
+tests/knowledge/test_graph.py: 36 warnings
+tests/knowledge/test_search.py: 56 warnings
+tests/knowledge/test_storage.py: 48 warnings
+tests/knowledge/test_version.py: 79 warnings
+  E:\project2\AI_Agent\nanobot\knowledge\store.py:128: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    return datetime.utcnow().isoformat(timespec="microseconds")
+
+tests/knowledge/test_version.py: 62 warnings
+  E:\project2\AI_Agent\nanobot\knowledge\version.py:130: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    timestamp = datetime.utcnow().isoformat() + "Z"
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html

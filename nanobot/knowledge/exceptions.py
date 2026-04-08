@@ -74,3 +74,21 @@ class GraphError(KnowledgeBaseError):
                 message = "Graph operation failed."
         super().__init__(message)
         self.graph_node = graph_node
+
+
+class ImportError(KnowledgeBaseError):
+    """Raised when an import operation fails."""
+    def __init__(self, message: str):
+        super().__init__(message)
+
+
+class ExportError(KnowledgeBaseError):
+    """Raised when an export operation fails."""
+    def __init__(self, message: str):
+        super().__init__(message)
+
+
+class MigrationError(KnowledgeBaseError):
+    """Raised when a migration operation fails."""
+    def __init__(self, message: str):
+        super().__init__(message)
